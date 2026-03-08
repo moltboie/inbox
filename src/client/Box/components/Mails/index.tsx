@@ -209,9 +209,18 @@ const RenderedMail = ({
   let searchHighlight;
 
   if ("highlight" in mail && mail.highlight) {
-    searchHighlight = Object.values(mail.highlight).map((e) => {
-      const __html = "..." + e.join("... ...") + "...";
-      return <div dangerouslySetInnerHTML={{ __html }}></div>;
+    searchHighlight = Object.values(mail.highlight).map((e, index) => {
+      // Sanitize ts_headline output: escape all HTML, then allow only <em>/<\/em>
+      // which are the StartSel/StopSel delimiters set server-side in the ts_headline call
+      const sanitize = (fragment: string) =>
+        fragment
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/&lt;em&gt;/g, "<em>")
+          .replace(/&lt;\/em&gt;/g, "</em>");
+      const __html = "..." + e.map(sanitize).join("... ...") + "...";
+      return <div key={`highlight_${index}`} dangerouslySetInnerHTML={{ __html }} />;
     });
   }
 
