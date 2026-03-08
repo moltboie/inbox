@@ -136,7 +136,7 @@ try {
   if (result) res.json(result);
 } catch (error: any) {
   console.error(error);
-  res.status(500).json({ status: "error", info: error?.message });
+  res.status(500).json({ status: "error", message: error?.message });
 }
 ```
 
@@ -213,6 +213,16 @@ Schema migrations run automatically on startup via `src/server/lib/postgres/migr
 
 - Tokens use `crypto.randomBytes()` (cryptographically secure)
 - Rate limiting on auth endpoints (15 min window, 10 attempts)
+
+### Data Deletion Strategy
+
+Prefer **soft-delete** over hard-delete for user-facing data:
+
+- Mark records as deleted (e.g., `expunged` flag) rather than removing rows
+- Soft-deleted records are excluded from normal queries but preserved for recovery
+- Hard deletion is reserved for cleanup tasks or explicit user requests
+
+This pattern is used in the IMAP EXPUNGE implementation where deleted messages retain their data until explicitly purged.
 
 ### IMAP Security
 
