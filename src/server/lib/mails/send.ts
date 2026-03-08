@@ -46,8 +46,12 @@ export const sendMail = async (
     const sentMail = await getSentMail(user, mailToSend, messageId, files);
     await saveMail(sentMail, userId);
     if (isToMyself(mailToSend.to)) {
-      // If the email is sent to myself, also save a copy in the inbox
-      await saveMail(new Mail({ ...sentMail, sent: false }), userId);
+      // If the email is sent to myself, also save a copy in the inbox.
+      // Use a new messageId to avoid violating the UNIQUE constraint on
+      // (user_id, message_id) — both the sent and inbox copies share the
+      // same userId, so they must have different messageIds.
+      const inboxMessageId = `<${randomUUID()}@${getUserDomain(username)}>`;
+      await saveMail(new Mail({ ...sentMail, sent: false, messageId: inboxMessageId }), userId);
     }
 
     return response;
