@@ -230,3 +230,56 @@ export const getBodyPart = (
 
   return null;
 };
+
+/**
+ * Return the MIME headers for a specific body part (BODY[n.MIME]).
+ * iOS Mail fetches this before fetching the actual part content.
+ */
+export const getMimePartHeaders = (
+  mail: Partial<MailType>,
+  partNumber: string
+): string => {
+  const parts = partNumber.split(".");
+  const mainPart = parseInt(parts[0], 10);
+
+  const hasText = mail.text && mail.text.trim().length > 0;
+  const hasHtml = mail.html && mail.html.trim().length > 0;
+  const hasAttachments = mail.attachments && mail.attachments.length > 0;
+
+  if (!hasAttachments) {
+    // Simple multipart/alternative or single part
+    if (hasText && hasHtml) {
+      if (parts.length === 1) {
+        if (mainPart === 1) return "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+        if (mainPart === 2) return "Content-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+      }
+    } else if (hasText && mainPart === 1) {
+      return "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+    } else if (hasHtml && mainPart === 1) {
+      return "Content-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+    }
+    return "\r\n";
+  }
+
+  // multipart/mixed with attachments
+  if (mainPart === 1) {
+    if (parts.length === 1) {
+      // BODY[1.MIME] → headers of the multipart/alternative inner part
+      return "Content-Type: multipart/alternative; boundary=\"inner_boundary\"\r\n\r\n";
+    }
+    // BODY[1.1.MIME] or BODY[1.2.MIME]
+    const subPart = parts[1] ? parseInt(parts[1], 10) : 1;
+    if (subPart === 1 && hasText) return "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+    if (subPart === 2 && hasHtml) return "Content-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n";
+  }
+
+  // Attachment parts
+  const attachmentIndex = mainPart - 2;
+  if (mail.attachments && attachmentIndex >= 0 && attachmentIndex < mail.attachments.length) {
+    const att = mail.attachments[attachmentIndex];
+    const [type, subtype] = (att.contentType || "application/octet-stream").split("/");
+    return `Content-Type: ${type}/${subtype}; name="${att.filename || "attachment"}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${att.filename || "attachment"}"\r\n\r\n`;
+  }
+
+  return "\r\n";
+};

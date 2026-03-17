@@ -23,7 +23,8 @@ import {
   getBodySectionKey,
   shouldMarkAsRead as checkShouldMarkAsRead,
   buildFullMessage,
-  getBodyPart
+  getBodyPart,
+  getMimePartHeaders
 } from "./session-utils";
 import {
   FetchRequest,
@@ -641,6 +642,13 @@ export class ImapSession {
       }
 
       case "MIME_PART":
+        if (section.subSection === "MIME") {
+          return getMimePartHeaders(mail, section.partNumber);
+        }
+        if (section.subSection === "HEADER") {
+          // BODY[n.HEADER] — same as BODY[n.MIME] for leaf parts
+          return getMimePartHeaders(mail, section.partNumber);
+        }
         return getBodyPart(mail, section.partNumber);
 
       default:
