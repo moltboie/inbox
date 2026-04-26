@@ -10,7 +10,7 @@ import {
   peek,
   consume
 } from "./primitive-parsers";
-import { logger } from "server";
+import { logger } from "../../logger";
 
 /**
  * Parse LIST command
