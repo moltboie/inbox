@@ -12,7 +12,7 @@ const makeSocketMock = () => {
     handlers[event] = cb;
     return socket;
   });
-  (socket as any)._handlers = handlers;
+  (socket as { _handlers: Record<string, () => void> })._handlers = handlers;
   return socket;
 };
 
@@ -31,8 +31,8 @@ const mockCreateConnection = mock((_opts: unknown, cb: () => void) => {
   netSocketMock = socket;
   setTimeout(() => {
     if (netBehavior === "connect") cb();
-    else if (netBehavior === "error") (socket as any)._handlers["error"]?.();
-    else if (netBehavior === "timeout") (socket as any)._handlers["timeout"]?.();
+    else if (netBehavior === "error") (socket as { _handlers: Record<string, () => void> })._handlers["error"]?.();
+    else if (netBehavior === "timeout") (socket as { _handlers: Record<string, () => void> })._handlers["timeout"]?.();
   }, 0);
   return socket;
 });
@@ -42,8 +42,8 @@ const mockTlsConnect = mock((_opts: unknown, cb: () => void) => {
   tlsSocketMock = socket;
   setTimeout(() => {
     if (tlsBehavior === "connect") cb();
-    else if (tlsBehavior === "error") (socket as any)._handlers["error"]?.();
-    else if (tlsBehavior === "timeout") (socket as any)._handlers["timeout"]?.();
+    else if (tlsBehavior === "error") (socket as { _handlers: Record<string, () => void> })._handlers["error"]?.();
+    else if (tlsBehavior === "timeout") (socket as { _handlers: Record<string, () => void> })._handlers["timeout"]?.();
   }, 0);
   return socket;
 });
@@ -78,20 +78,20 @@ const invokeHealthGet = async (router: Router): Promise<Response & { _code: numb
   const next = mock(() => {});
 
   // Find all layers with route path "/"
-  const layers = (router as any).stack as Array<{
+  const layers = (router as unknown as { stack: unknown[] }).stack as Array<{
     route?: { path: string; methods: Record<string, boolean>; stack: Array<{ handle: (req: Request, res: Response, next: NextFunction) => void }> };
   }>;
 
   for (const layer of layers) {
     if (layer.route?.path === "/" && layer.route.methods["get"]) {
       for (const handler of layer.route.stack) {
-        await handler.handle(req, res as any, next as any);
+        await handler.handle(req, res, next);
       }
       break;
     }
   }
 
-  return res as any;
+  return res;
 };
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ describe("healthRouter GET /", () => {
     const res = await invokeHealthGet(healthRouter);
 
     expect(res._code).toBe(200);
-    const body = res._body as any;
+    const body = res._body as { status: string; body: { healthy: boolean; checks: { database: string; http: string }; timestamp: number } };
     expect(body.status).toBe("success");
     expect(body.body.healthy).toBe(true);
     expect(body.body.checks.database).toBe("ok");
@@ -124,7 +124,7 @@ describe("healthRouter GET /", () => {
     const res = await invokeHealthGet(healthRouter);
 
     expect(res._code).toBe(503);
-    const body = res._body as any;
+    const body = res._body as { status: string; body: { healthy: boolean; checks: { database: string; http: string }; timestamp: number } };
     expect(body.status).toBe("error");
     expect(body.body.healthy).toBe(false);
     expect(body.body.checks.database).toBe("unhealthy");
@@ -137,7 +137,7 @@ describe("healthRouter GET /", () => {
     const res = await invokeHealthGet(healthRouter);
 
     expect(res._code).toBe(503);
-    const body = res._body as any;
+    const body = res._body as { status: string; body: { healthy: boolean; checks: { database: string; http: string }; timestamp: number } };
     expect(body.body.healthy).toBe(false);
   });
 
@@ -154,7 +154,7 @@ describe("healthRouter GET /", () => {
     const { default: healthRouter } = await import("./health");
     const res = await invokeHealthGet(healthRouter);
 
-    const body = res._body as any;
+    const body = res._body as { status: string; body: { healthy: boolean; checks: { database: string; http: string }; timestamp: number } };
     expect(body.body.checks.http).toBe("ok");
   });
 
@@ -162,7 +162,7 @@ describe("healthRouter GET /", () => {
     const { default: healthRouter } = await import("./health");
     const res = await invokeHealthGet(healthRouter);
 
-    const body = res._body as any;
+    const body = res._body as { status: string; body: { healthy: boolean; checks: { database: string; http: string }; timestamp: number } };
     expect(typeof body.body.timestamp).toBe("number");
     expect(body.body.timestamp).toBeGreaterThan(0);
   });

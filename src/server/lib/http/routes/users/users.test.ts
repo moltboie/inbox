@@ -92,11 +92,11 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { username: "alice", password: "secret" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toMatchObject({ id: "u1", username: "alice" });
-    expect((req as any).session.user).toMatchObject({ id: "u1", username: "alice" });
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toMatchObject({ id: "u1", username: "alice" });
+    expect((req as unknown as { session: import("express-session").Session & { user: unknown; destroy: ReturnType<typeof mock> } }).session.user).toMatchObject({ id: "u1", username: "alice" });
   });
 
   it("returns failed when password doesn't match", async () => {
@@ -109,10 +109,10 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { username: "alice", password: "wrong" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toContain("Invalid credentials");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toContain("Invalid credentials");
   });
 
   it("returns failed when user doesn't exist (runs dummy hash to prevent timing attacks)", async () => {
@@ -125,9 +125,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { username: "nobody", password: "anypassword" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
     // bcrypt.compare should still have been called (dummy hash)
     expect(mockBcryptCompare).toHaveBeenCalled();
   });
@@ -138,9 +138,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: null });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns failed when body is an array", async () => {
@@ -149,9 +149,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: [] });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns failed when password is missing", async () => {
@@ -160,9 +160,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { username: "alice" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns failed when email field is not a string", async () => {
@@ -171,9 +171,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { email: 123, password: "secret" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns failed when username field is not a string", async () => {
@@ -182,9 +182,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { username: {}, password: "secret" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("accepts login with email field instead of username", async () => {
@@ -197,9 +197,9 @@ describe("postLoginRoute", () => {
     const req = makeReq({ body: { email: "alice@example.com", password: "correct" } });
     const res = makeRes();
 
-    const result = await postLoginRoute.callback(req, res as any, noopStream);
+    const result = await postLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("success");
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 });
 
@@ -212,17 +212,17 @@ describe("deleteLoginRoute", () => {
     const req = makeReq({ method: "DELETE" });
     const res = makeRes();
 
-    const result = await deleteLoginRoute.callback(req, res as any, noopStream);
+    const result = await deleteLoginRoute.callback(req, res, noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((req as any).session.destroy).toHaveBeenCalled();
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((req as unknown as { session: import("express-session").Session & { user: unknown; destroy: ReturnType<typeof mock> } }).session.destroy).toHaveBeenCalled();
   });
 
   it("throws when session.destroy calls back with an error", async () => {
     const { deleteLoginRoute } = await import("./delete-login");
 
     const req = makeReq({ method: "DELETE" });
-    (req as any).session.destroy = mock((cb: (err: Error) => void) => cb(new Error("session store error")));
+    (req as unknown as { session: import("express-session").Session & { user: unknown; destroy: ReturnType<typeof mock> } }).session.destroy = mock((cb: (err: Error) => void) => cb(new Error("session store error")));
     const res = makeRes();
 
     // The implementation calls destroy and if error occurs, throws inside the cb
@@ -232,13 +232,13 @@ describe("deleteLoginRoute", () => {
     // We verify the callback was called and the route still returns.
     let threw = false;
     try {
-      await deleteLoginRoute.callback(req, res as any, noopStream);
+      await deleteLoginRoute.callback(req, res, noopStream);
     } catch {
       threw = true;
     }
     // Either throws or returns (depending on sync/async behavior of mock)
     // The important thing is the route attempted session.destroy
-    expect((req as any).session.destroy).toHaveBeenCalled();
+    expect((req as unknown as { session: import("express-session").Session & { user: unknown; destroy: ReturnType<typeof mock> } }).session.destroy).toHaveBeenCalled();
   });
 });
 
@@ -248,20 +248,20 @@ describe("getLoginRoute", () => {
   it("returns user and app version when session has user", async () => {
     const { getLoginRoute } = await import("./get-login");
     const req = makeReq({ session: { user: { id: "u1", username: "alice" } } });
-    const result = await getLoginRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body.user).toMatchObject({ id: "u1", username: "alice" });
-    expect((result as any).body.app.version).toBe(TEST_VERSION);
+    const result = await getLoginRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body.user).toMatchObject({ id: "u1", username: "alice" });
+    expect((result as ApiResponse<unknown>).body.app.version).toBe(TEST_VERSION);
   });
 
   it("returns null user and app version when not logged in", async () => {
     const { getLoginRoute } = await import("./get-login");
     const req = makeReq({ session: {} });
-    const result = await getLoginRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body.user).toBeUndefined();
-    expect((result as any).body.app.version).toBe(TEST_VERSION);
-    expect((result as any).message).toMatch(/Not logged in/i);
+    const result = await getLoginRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body.user).toBeUndefined();
+    expect((result as ApiResponse<unknown>).body.app.version).toBe(TEST_VERSION);
+    expect((result as ApiResponse<unknown>).message).toMatch(/Not logged in/i);
   });
 });
 
@@ -273,51 +273,51 @@ describe("postSetInfoRoute", () => {
   it("returns failed when body is missing", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const req = makeReq({ body: null });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns failed when email is missing", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const req = makeReq({ body: { username: "alice", password: "pass" } });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/email is required/i);
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/email is required/i);
   });
 
   it("returns failed when username is missing", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const req = makeReq({ body: { email: "a@b.com", password: "pass" } });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/username is required/i);
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/username is required/i);
   });
 
   it("returns failed when password is missing", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const req = makeReq({ body: { email: "a@b.com", username: "alice" } });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/password is required/i);
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/password is required/i);
   });
 
   it("returns failed when token is not a string", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const req = makeReq({ body: { email: "a@b.com", username: "alice", password: "pass", token: 123 } });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/token must be a string/i);
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/token must be a string/i);
   });
 
   it("sets session user and returns success with valid data", async () => {
     const { postSetInfoRoute } = await import("./post-set-info");
     const maskedUser = { id: "u1", username: "alice", email: "a@b.com" };
-    mockSetUserInfo.mockResolvedValueOnce(maskedUser as any);
+    mockSetUserInfo.mockResolvedValueOnce(maskedUser as Awaited<ReturnType<typeof mockSetUserInfo>>);
     const req = makeReq({ body: { email: "a@b.com", username: "alice", password: "pass" } });
-    const result = await postSetInfoRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual(maskedUser);
-    expect((req as any).session.user).toEqual(maskedUser);
+    const result = await postSetInfoRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual(maskedUser);
+    expect((req as unknown as { session: import("express-session").Session & { user: unknown; destroy: ReturnType<typeof mock> } }).session.user).toEqual(maskedUser);
   });
 });
 
@@ -336,9 +336,9 @@ describe("postTokenRoute", () => {
     const { postTokenRoute } = await import("./post-token");
     mockIsValidEmail.mockReturnValueOnce(false);
     const req = makeReq({ body: { email: "notanemail" } });
-    const result = await postTokenRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/invalid/i);
+    const result = await postTokenRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/invalid/i);
   });
 
   it("sends auth email and returns success for valid email", async () => {
@@ -347,8 +347,8 @@ describe("postTokenRoute", () => {
     mockGetUser.mockResolvedValueOnce(adminUser);
     mockGetSignedUser.mockReturnValueOnce({ id: "admin1", username: "admin" });
     const req = makeReq({ body: { email: "user@example.com" } });
-    const result = await postTokenRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postTokenRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockStartTimer).toHaveBeenCalledWith("u1");
   });

@@ -5,6 +5,7 @@
  *   delete-allowlist, post-send, post-spam-mark, get-attachment
  */
 import { describe, it, expect, mock, beforeEach } from "bun:test";
+import type { ApiResponse } from "../route";
 
 // ── Shared mocks for "server" barrel ─────────────────────────────────────────
 
@@ -117,7 +118,7 @@ describe("getHeadersRoute", () => {
     const { getHeadersRoute } = await import("./get-headers");
 
     const fakeMails = [{ id: "m1", subject: "Hello" }];
-    mockGetMailHeaders.mockResolvedValueOnce(fakeMails as any);
+    mockGetMailHeaders.mockResolvedValueOnce(fakeMails as never);
 
     const req = makeReq({
       method: "GET",
@@ -127,15 +128,15 @@ describe("getHeadersRoute", () => {
     });
     const res = makeRes();
 
-    const result = await getHeadersRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual(fakeMails);
+    const result = await getHeadersRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual(fakeMails);
   });
 
   it("allows admin user to access any account", async () => {
     const { getHeadersRoute } = await import("./get-headers");
 
-    mockGetMailHeaders.mockResolvedValueOnce([] as any);
+    mockGetMailHeaders.mockResolvedValueOnce([] as never);
     mockAddressToUsername.mockReturnValueOnce("bob");
 
     const req = makeReq({
@@ -146,8 +147,8 @@ describe("getHeadersRoute", () => {
     });
     const res = makeRes();
 
-    const result = await getHeadersRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await getHeadersRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 
   it("returns failed when user tries to access another user's account", async () => {
@@ -163,8 +164,8 @@ describe("getHeadersRoute", () => {
     });
     const res = makeRes();
 
-    const result = await getHeadersRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("failed");
+    const result = await getHeadersRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("passes query options (sent/new/saved) to getMailHeaders", async () => {
@@ -181,7 +182,7 @@ describe("getHeadersRoute", () => {
     });
     const res = makeRes();
 
-    await getHeadersRoute.callback(req, res as any, noopStream);
+    await getHeadersRoute.callback(req, res, noopStream);
 
     const callArgs = mockGetMailHeaders.mock.calls[0];
     expect(callArgs[2]).toMatchObject({ sent: true, new: true, saved: false });
@@ -200,25 +201,25 @@ describe("getAccountsRoute", () => {
       received: [{ address: "alice@example.com" }],
       sent: [{ address: "bob@example.com" }],
     };
-    mockGetAccounts.mockResolvedValueOnce(fakeAccounts as any);
+    mockGetAccounts.mockResolvedValueOnce(fakeAccounts as never);
 
     const req = makeReq({ session: { user: makeUser("alice") } });
     const res = makeRes();
 
-    const result = await getAccountsRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toMatchObject(fakeAccounts);
+    const result = await getAccountsRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toMatchObject(fakeAccounts);
   });
 
   it("calls getAccounts with the session user", async () => {
     const { getAccountsRoute } = await import("./get-accounts");
 
-    mockGetAccounts.mockResolvedValueOnce({ received: [], sent: [] } as any);
+    mockGetAccounts.mockResolvedValueOnce({ received: [], sent: [] } as never);
     const user = makeUser("bob");
     const req = makeReq({ session: { user } });
     const res = makeRes();
 
-    await getAccountsRoute.callback(req, res as any, noopStream);
+    await getAccountsRoute.callback(req, res, noopStream);
 
     expect(mockGetAccounts).toHaveBeenCalledWith(user);
   });
@@ -238,9 +239,9 @@ describe("getBodyRoute", () => {
     const req = makeReq({ params: { id: "m1" } });
     const res = makeRes();
 
-    const result = await getBodyRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual(fakeMail);
+    const result = await getBodyRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual(fakeMail);
   });
 
   it("returns failed when mail is not found", async () => {
@@ -251,9 +252,9 @@ describe("getBodyRoute", () => {
     const req = makeReq({ params: { id: "missing" } });
     const res = makeRes();
 
-    const result = await getBodyRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toBeTruthy();
+    const result = await getBodyRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toBeTruthy();
   });
 });
 
@@ -273,8 +274,8 @@ describe("deleteMailRoute", () => {
     const req = makeReq({ method: "DELETE", params: { id: "m1" } });
     const res = makeRes();
 
-    const result = await deleteMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await deleteMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
     expect(mockDeleteMail).toHaveBeenCalledWith("u1", "m1");
   });
 
@@ -286,8 +287,8 @@ describe("deleteMailRoute", () => {
     const req = makeReq({ method: "DELETE", params: { id: "other-m" } });
     const res = makeRes();
 
-    const result = await deleteMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("failed");
+    const result = await deleteMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
     expect(mockDeleteMail).not.toHaveBeenCalled();
   });
 });
@@ -313,8 +314,8 @@ describe("postMarkMailRoute", () => {
     });
     const res = makeRes();
 
-    const result = await postMarkMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postMarkMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
     expect(mockMarkRead).toHaveBeenCalledWith("u1", "m1");
   });
 
@@ -329,8 +330,8 @@ describe("postMarkMailRoute", () => {
     });
     const res = makeRes();
 
-    const result = await postMarkMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postMarkMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
     expect(mockMarkSaved).toHaveBeenCalledWith("u1", "m1", true);
   });
 
@@ -345,8 +346,8 @@ describe("postMarkMailRoute", () => {
     });
     const res = makeRes();
 
-    const result = await postMarkMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postMarkMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
     expect(mockMarkSaved).toHaveBeenCalledWith("u1", "m1", false);
   });
 
@@ -361,8 +362,8 @@ describe("postMarkMailRoute", () => {
     });
     const res = makeRes();
 
-    const result = await postMarkMailRoute.callback(req, res as any, noopStream);
-    expect((result as any).status).toBe("failed");
+    const result = await postMarkMailRoute.callback(req, res, noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
     expect(mockMarkRead).not.toHaveBeenCalled();
   });
 
@@ -377,7 +378,7 @@ describe("postMarkMailRoute", () => {
     });
     const res = makeRes();
 
-    await postMarkMailRoute.callback(req, res as any, noopStream);
+    await postMarkMailRoute.callback(req, res, noopStream);
     expect(mockMarkRead).not.toHaveBeenCalled();
   });
 });
@@ -390,13 +391,13 @@ describe("getSearchRoute", () => {
   it("returns search results for a given value", async () => {
     const { getSearchRoute } = await import("./get-search");
     const fakeMails = [{ id: "m1", subject: "Test" }];
-    mockSearchMail.mockResolvedValueOnce(fakeMails as any);
+    mockSearchMail.mockResolvedValueOnce(fakeMails as never);
 
     const req = makeReq({ params: { value: "Test" }, query: {} });
-    const result = await getSearchRoute.callback(req, makeRes() as any, noopStream);
+    const result = await getSearchRoute.callback(req, makeRes(), noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual(fakeMails);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual(fakeMails);
     expect(mockSearchMail).toHaveBeenCalledTimes(1);
   });
 
@@ -405,7 +406,7 @@ describe("getSearchRoute", () => {
     mockSearchMail.mockResolvedValueOnce([]);
 
     const req = makeReq({ params: { value: "hello" }, query: { field: "subject" } });
-    await getSearchRoute.callback(req, makeRes() as any, noopStream);
+    await getSearchRoute.callback(req, makeRes(), noopStream);
 
     expect(mockSearchMail).toHaveBeenCalledWith(
       expect.objectContaining({ id: "u1" }),
@@ -423,13 +424,13 @@ describe("getSpamMailsRoute", () => {
   it("returns spam headers for authenticated user", async () => {
     const { getSpamMailsRoute } = await import("./get-spam");
     const spamMails = [{ id: "s1" }];
-    mockGetSpamHeaders.mockResolvedValueOnce(spamMails as any);
+    mockGetSpamHeaders.mockResolvedValueOnce(spamMails as never);
 
     const req = makeReq();
-    const result = await getSpamMailsRoute.callback(req, makeRes() as any, noopStream);
+    const result = await getSpamMailsRoute.callback(req, makeRes(), noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual(spamMails);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual(spamMails);
   });
 });
 
@@ -440,10 +441,10 @@ describe("getDomainRoute", () => {
 
   it("returns the configured domain", async () => {
     const { getDomainRoute } = await import("./get-domain");
-    const result = await getDomainRoute.callback(makeReq(), makeRes() as any, noopStream);
+    const result = await getDomainRoute.callback(makeReq(), makeRes(), noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toBe("example.com");
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toBe("example.com");
   });
 });
 
@@ -457,12 +458,12 @@ describe("getSpamAllowlistRoute", () => {
     const entries = [
       { allowlist_id: "a1", pattern: "*@spam.com", created_at: "2026-01-01" },
     ];
-    mockGetAllowlistForUser.mockResolvedValueOnce(entries as any);
+    mockGetAllowlistForUser.mockResolvedValueOnce(entries as never);
 
-    const result = await getSpamAllowlistRoute.callback(makeReq(), makeRes() as any, noopStream);
+    const result = await getSpamAllowlistRoute.callback(makeReq(), makeRes(), noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual([
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual([
       { id: "a1", pattern: "*@spam.com", createdAt: "2026-01-01" },
     ]);
   });
@@ -471,10 +472,10 @@ describe("getSpamAllowlistRoute", () => {
     const { getSpamAllowlistRoute } = await import("./get-allowlist");
     mockGetAllowlistForUser.mockResolvedValueOnce([]);
 
-    const result = await getSpamAllowlistRoute.callback(makeReq(), makeRes() as any, noopStream);
+    const result = await getSpamAllowlistRoute.callback(makeReq(), makeRes(), noopStream);
 
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toEqual([]);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toEqual([]);
   });
 });
 
@@ -486,26 +487,26 @@ describe("postSpamAllowlistRoute", () => {
   it("rejects missing pattern", async () => {
     const { postSpamAllowlistRoute } = await import("./post-allowlist");
     const req = makeReq({ body: {} });
-    const result = await postSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/pattern is required/i);
+    const result = await postSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/pattern is required/i);
   });
 
   it("rejects invalid pattern format", async () => {
     const { postSpamAllowlistRoute } = await import("./post-allowlist");
     const req = makeReq({ body: { pattern: "notavalidemail" } });
-    const result = await postSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/email address/i);
+    const result = await postSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/email address/i);
   });
 
   it("returns failed when entry already exists (null returned)", async () => {
     const { postSpamAllowlistRoute } = await import("./post-allowlist");
     mockAddAllowlistEntry.mockResolvedValueOnce(null);
     const req = makeReq({ body: { pattern: "*@spam.com" } });
-    const result = await postSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/already exists/i);
+    const result = await postSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/already exists/i);
   });
 
   it("returns success with new entry on exact email pattern", async () => {
@@ -516,9 +517,9 @@ describe("postSpamAllowlistRoute", () => {
       created_at: "2026-04-01",
     });
     const req = makeReq({ body: { pattern: "bad@spam.com" } });
-    const result = await postSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toMatchObject({ id: "a2", pattern: "bad@spam.com" });
+    const result = await postSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toMatchObject({ id: "a2", pattern: "bad@spam.com" });
   });
 
   it("returns success with domain wildcard pattern", async () => {
@@ -529,9 +530,9 @@ describe("postSpamAllowlistRoute", () => {
       created_at: "2026-04-01",
     });
     const req = makeReq({ body: { pattern: "*@domain.com" } });
-    const result = await postSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toMatchObject({ pattern: "*@domain.com" });
+    const result = await postSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toMatchObject({ pattern: "*@domain.com" });
   });
 });
 
@@ -544,17 +545,17 @@ describe("deleteSpamAllowlistRoute", () => {
     const { deleteSpamAllowlistRoute } = await import("./delete-allowlist");
     mockRemoveAllowlistEntry.mockResolvedValueOnce(false);
     const req = makeReq({ params: { pattern: "*%40spam.com" } });
-    const result = await deleteSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/not found/i);
+    const result = await deleteSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/not found/i);
   });
 
   it("returns success when entry removed", async () => {
     const { deleteSpamAllowlistRoute } = await import("./delete-allowlist");
     mockRemoveAllowlistEntry.mockResolvedValueOnce(true);
     const req = makeReq({ params: { pattern: "*%40spam.com" } });
-    const result = await deleteSpamAllowlistRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await deleteSpamAllowlistRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 });
 
@@ -569,26 +570,26 @@ describe("postSendMailRoute", () => {
     const req = makeReq({
       body: { to: "test@example.com", subject: "Hi", text: "Hello" },
     });
-    const result = await postSendMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postSendMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 
   it("returns failed on MailValidationError", async () => {
     const { postSendMailRoute } = await import("./post-send");
     mockSendMail.mockRejectedValueOnce(new MockMailValidationError("bad mail"));
     const req = makeReq({ body: { to: "x@x.com", subject: "s", text: "t" } });
-    const result = await postSendMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toBe("bad mail");
+    const result = await postSendMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toBe("bad mail");
   });
 
   it("returns failed on MailSendingError", async () => {
     const { postSendMailRoute } = await import("./post-send");
     mockSendMail.mockRejectedValueOnce(new MockMailSendingError("send failed"));
     const req = makeReq({ body: { to: "x@x.com", subject: "s", text: "t" } });
-    const result = await postSendMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toBe("send failed");
+    const result = await postSendMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toBe("send failed");
   });
 
   it("rethrows unknown errors", async () => {
@@ -596,7 +597,7 @@ describe("postSendMailRoute", () => {
     const unknownError = new Error("unexpected");
     mockSendMail.mockRejectedValueOnce(unknownError);
     const req = makeReq({ body: { to: "x@x.com", subject: "s", text: "t" } });
-    await expect(postSendMailRoute.callback(req, makeRes() as any, noopStream)).rejects.toThrow("unexpected");
+    await expect(postSendMailRoute.callback(req, makeRes(), noopStream)).rejects.toThrow("unexpected");
   });
 });
 
@@ -608,34 +609,34 @@ describe("postMarkSpamMailRoute", () => {
   it("rejects when is_spam is not boolean", async () => {
     const { postMarkSpamMailRoute } = await import("./post-spam-mark");
     const req = makeReq({ body: { mail_id: "m1", is_spam: "yes" } });
-    const result = await postMarkSpamMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/boolean/i);
+    const result = await postMarkSpamMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/boolean/i);
   });
 
   it("returns failed when mail not found or no permission", async () => {
     const { postMarkSpamMailRoute } = await import("./post-spam-mark");
     mockMarkSpam.mockResolvedValueOnce(null);
     const req = makeReq({ body: { mail_id: "m1", is_spam: true } });
-    const result = await postMarkSpamMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/not found/i);
+    const result = await postMarkSpamMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/not found/i);
   });
 
   it("returns success when spam marked", async () => {
     const { postMarkSpamMailRoute } = await import("./post-spam-mark");
     mockMarkSpam.mockResolvedValueOnce({ id: "m1" });
     const req = makeReq({ body: { mail_id: "m1", is_spam: true } });
-    const result = await postMarkSpamMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postMarkSpamMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 
   it("returns success when spam unmarked (is_spam false)", async () => {
     const { postMarkSpamMailRoute } = await import("./post-spam-mark");
     mockMarkSpam.mockResolvedValueOnce({ id: "m1" });
     const req = makeReq({ body: { mail_id: "m1", is_spam: false } });
-    const result = await postMarkSpamMailRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await postMarkSpamMailRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 });
 
@@ -650,18 +651,18 @@ describe("getAttachmentRoute", () => {
   it("returns failed with auth error when no session user", async () => {
     const { getAttachmentRoute } = await import("./get-attachment");
     const req = makeReq({ session: { user: undefined } });
-    const result = await getAttachmentRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toBe(AUTH_ERROR_MESSAGE);
+    const result = await getAttachmentRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toBe(AUTH_ERROR_MESSAGE);
   });
 
   it("returns failed when mail not found (IDOR protection)", async () => {
     const { getAttachmentRoute } = await import("./get-attachment");
     mockMailsTableQueryOne.mockResolvedValueOnce(null);
     const req = makeReq({ params: { id: "att1" } });
-    const result = await getAttachmentRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toBe("Not found");
+    const result = await getAttachmentRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toBe("Not found");
   });
 
   it("returns failed when attachment file missing from disk", async () => {
@@ -669,8 +670,8 @@ describe("getAttachmentRoute", () => {
     mockMailsTableQueryOne.mockResolvedValueOnce({ id: "m1" });
     mockGetAttachment.mockReturnValueOnce(undefined);
     const req = makeReq({ params: { id: "att1" } });
-    const result = await getAttachmentRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
+    const result = await getAttachmentRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
   });
 
   it("returns attachment buffer when found", async () => {
@@ -679,7 +680,7 @@ describe("getAttachmentRoute", () => {
     mockMailsTableQueryOne.mockResolvedValueOnce({ id: "m1" });
     mockGetAttachment.mockReturnValueOnce(fakeBuffer);
     const req = makeReq({ params: { id: "att1" } });
-    const result = await getAttachmentRoute.callback(req, makeRes() as any, noopStream);
+    const result = await getAttachmentRoute.callback(req, makeRes(), noopStream);
     expect(result).toBe(fakeBuffer);
   });
 });

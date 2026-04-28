@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
+import type { ApiResponse } from "../route";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -73,9 +74,9 @@ describe("getPublicKeyRoute", () => {
 
   it("returns the VAPID public key", async () => {
     const { getPublicKeyRoute } = await import("./get-public-key");
-    const result = await getPublicKeyRoute.callback(makeReq(), makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toBe("test-vapid-public-key");
+    const result = await getPublicKeyRoute.callback(makeReq(), makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toBe("test-vapid-public-key");
     expect(mockGetPushPublicKey).toHaveBeenCalledTimes(1);
   });
 });
@@ -89,17 +90,17 @@ describe("getRefreshRoute", () => {
     const { getRefreshRoute } = await import("./get-refresh");
     mockRefreshSubscription.mockResolvedValueOnce({ _id: "sub1" });
     const req = makeReq({ params: { id: "sub1" } });
-    const result = await getRefreshRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
+    const result = await getRefreshRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
   });
 
   it("returns failed when subscription is not found", async () => {
     const { getRefreshRoute } = await import("./get-refresh");
     mockRefreshSubscription.mockResolvedValueOnce(null);
     const req = makeReq({ params: { id: "nonexistent" } });
-    const result = await getRefreshRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/No subscription found/i);
+    const result = await getRefreshRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/No subscription found/i);
   });
 });
 
@@ -113,9 +114,9 @@ describe("postSubscribeRoute", () => {
     const fakeSub = { endpoint: "https://fcm.example.com", keys: { p256dh: "abc", auth: "xyz" } };
     mockStoreSubscription.mockResolvedValueOnce({ _id: "sub42" });
     const req = makeReq({ body: { subscription: fakeSub } });
-    const result = await postSubscribeRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("success");
-    expect((result as any).body).toBe("sub42");
+    const result = await postSubscribeRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("success");
+    expect((result as ApiResponse<unknown>).body).toBe("sub42");
     expect(mockStoreSubscription).toHaveBeenCalledWith("u1", fakeSub);
   });
 
@@ -124,8 +125,8 @@ describe("postSubscribeRoute", () => {
     const fakeSub = { endpoint: "https://fcm.example.com", keys: { p256dh: "abc", auth: "xyz" } };
     mockStoreSubscription.mockResolvedValueOnce(null);
     const req = makeReq({ body: { subscription: fakeSub } });
-    const result = await postSubscribeRoute.callback(req, makeRes() as any, noopStream);
-    expect((result as any).status).toBe("failed");
-    expect((result as any).message).toMatch(/Failed to store subscription/i);
+    const result = await postSubscribeRoute.callback(req, makeRes(), noopStream);
+    expect((result as ApiResponse<unknown>).status).toBe("failed");
+    expect((result as ApiResponse<unknown>).message).toMatch(/Failed to store subscription/i);
   });
 });

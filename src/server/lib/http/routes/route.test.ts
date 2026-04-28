@@ -29,7 +29,7 @@ const makeRes = () => {
   res.send = mock((body: unknown) => { res._body = body; return res; });
   res.write = mock((chunk: string) => { chunks.push(chunk); return true; });
   res.end = mock(() => res);
-  (res as any)._chunks = chunks;
+  (res as unknown as { _chunks: string[] })._chunks = chunks;
   return res as unknown as import("express").Response & { _code: number; _body: unknown; _chunks: string[] };
 };
 
@@ -67,7 +67,7 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(cb).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(res.json).toHaveBeenCalledWith({ status: "success", body: { hello: "world" } });
     expect(next).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(res.end).toHaveBeenCalled();
   });
@@ -106,7 +106,7 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(res.send).toHaveBeenCalledWith(buf);
   });
@@ -121,10 +121,10 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
-    expect((res as any)._chunks.length).toBe(2);
-    expect((res as any)._chunks[0]).toContain("chunk-1");
+    expect((res as unknown as { _chunks: string[] })._chunks.length).toBe(2);
+    expect((res as unknown as { _chunks: string[] })._chunks[0]).toContain("chunk-1");
   });
 
   it("writes Buffer chunks directly via stream callback", async () => {
@@ -137,7 +137,7 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(res.write).toHaveBeenCalledWith(buf);
   });
@@ -152,10 +152,10 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect((res as any)._body).toMatchObject({ status: "error", message: "kaboom" });
+    expect((res as unknown as { _body: unknown })._body).toMatchObject({ status: "error", message: "kaboom" });
   });
 
   it("hides error message in production", async () => {
@@ -170,9 +170,9 @@ describe("Route.handler", () => {
     const res = makeRes();
     const next = makeNext();
 
-    await route.handler(req, res as any, next);
+    await route.handler(req, res, next);
 
-    expect((res as any)._body).toMatchObject({ status: "error", message: "Internal server error" });
+    expect((res as unknown as { _body: unknown })._body).toMatchObject({ status: "error", message: "Internal server error" });
     process.env.NODE_ENV = origEnv;
   });
 });
@@ -185,7 +185,7 @@ describe("authRequired", () => {
     const res = makeRes();
     const next = makeNext();
 
-    authRequired(req, res as any, next);
+    authRequired(req, res, next);
 
     expect(next).toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
@@ -196,10 +196,10 @@ describe("authRequired", () => {
     const res = makeRes();
     const next = makeNext();
 
-    authRequired(req, res as any, next);
+    authRequired(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect((res as any)._body).toMatchObject({ status: "failed", message: AUTH_ERROR_MESSAGE });
+    expect((res as unknown as { _body: unknown })._body).toMatchObject({ status: "failed", message: AUTH_ERROR_MESSAGE });
     expect(next).not.toHaveBeenCalled();
   });
 });
